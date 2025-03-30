@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Celestial Cafe CMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-200">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-primary">Celestial Cafe Customer Management System</h1>
+            <p class="text-gray-600 dark:text-gray-400">Create and track customer booking</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Booking Form -->
+            <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Add New Booking</h2>
+                <form id="bookingForm" class="space-y-4">
+                    <div>
+                        <label for="customerName" class="block mb-1">Customer Name</label>
+                        <input type="text" id="customerName" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required>
+                    </div>
+                    <div>
+                        <label for="contactMedium" class="block mb-1">Contact Medium</label>
+                        <select id="contactMedium" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required>
+                            <option value="">Select Contact Medium</option>
+                            <option value="Telegram">Telegram</option>
+                            <option value="Email">Email</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="username" class="block mb-1">Username</label>
+                        <input type="text" id="username" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required>
+                    </div>
+                    <div>
+                        <label for="timeslot" class="block mb-1">Timeslot</label>
+                        <select id="timeslot" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required>
+                            <option value="">Select timeslot</option>
+                            <option value="1400 - 1530">1400 - 1530</option>
+                            <option value="1600 - 1730">1600 - 1730</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block">Selected Dishes</label>
+                            <button type="button" id="addDishButton" class="text-primary hover:text-primary/90 font-medium text-sm">
+                                + Add Another Dish
+                            </button>
+                        </div>
+                        <div id="dishesContainer">
+                            <div class="dish-row flex space-x-4 mb-2">
+                                <div class="flex-1">
+                                    <select name="selectedDish" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required>
+                                        <option value="">Select Dish</option>
+                                        <option value="Basque cake">Basque cake</option>
+                                        <option value="Celestial Cupcake">Celestial Cupcake</option>
+                                    </select>
+                                </div>
+                                <div class="w-1/3">
+                                    <input type="number" name="dishQuantity" min="1" value="1" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required placeholder="Qty">
+                                </div>
+                                <div class="flex items-center">
+                                    <button type="button" class="remove-dish-btn text-red-500 hover:text-red-700 px-2" style="display: none;">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="seatNumber" class="block mb-1">Seat Number</label>
+                        <select id="seatNumber" class="w-full px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-700 text-base" required>
+                            <option value="">Select Seat</option>
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                        </select>
+                    </div>
+                    <!-- Encryption shift key is preset to 3 -->
+                    <input type="hidden" id="shiftKey" value="3">
+                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded transition-colors">
+                        Save Booking
+                    </button>
+                </form>
+            </div>
+
+            <!-- QR Code Display - ENHANCED FOR LARGER QR CODES -->
+            <div class="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4">Booking QR Code</h2>
+                <div id="qrCodeContainer" class="flex flex-col items-center justify-center min-h-[300px] bg-white dark:bg-gray-700 rounded-lg p-4">
+                    <p class="text-gray-500 dark:text-gray-400 text-center">QR code will appear here after creating a booking</p>
+                </div>
+                <div id="bookingDetails" class="mt-4 p-4 bg-white dark:bg-gray-700 rounded-lg hidden">
+                    <h3 class="font-semibold mb-2">Booking Details:</h3>
+                    <div id="bookingInfo" class="text-sm"></div>
+                    <div class="mt-4">
+                        <button id="downloadQR" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded transition-colors hidden">
+                            Save QR Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saved Bookings -->
+        <div class="mt-8 bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                <h2 class="text-xl font-semibold">Saved Bookings</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button id="exportCSV" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded transition-colors">
+                        Export CSV
+                    </button>
+                    <label for="importCSV" class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded transition-colors cursor-pointer">
+                        Import CSV
+                    </label>
+                    <input type="file" id="importCSV" accept=".csv" class="hidden">
+                    <button id="toggleTheme" class="bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded transition-colors">
+                        <span id="themeIcon">🌙</span>
+                    </button>
+                </div>
+            </div>
+            <div id="savedBookings" class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Bookings will be displayed here -->
+                <p id="noBookings" class="text-gray-500 dark:text-gray-400 col-span-full text-center py-4">No bookings saved yet</p>
+            </div>
+        </div>
+        
+        <!-- Version Timestamp -->
+        <div class="mt-8 text-center text-xs text-gray-500 dark:text-gray-400 py-2">
+            <p>v20250331 1045</p>
+        </div>
+    </div>
+
+    <script>
+        // Check for dark mode preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+            document.getElementById('themeIcon').textContent = '☀️';
+        }
+
+        // Listen for changes to color scheme
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIcon').textContent = '☀️';
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('themeIcon').textContent = '🌙';
+            }
+        });
+
+        // Toggle theme button
+        document.getElementById('toggleTheme').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+        });
+
+        // Caesar cipher encryption function
+        function caesarEncrypt(text, shift) {
+            return text.split('').map(char => {
+                const code = char.charCodeAt(0);
+                // Handle uppercase letters
+                if (code >= 65 && code <= 90) {
+                    return String.fromCharCode(((code - 65 + shift) % 26) + 65);
+                }
+                // Handle lowercase letters
+                else if (code >= 97 && code <= 122) {
+                    return String.fromCharCode(((code - 97 + shift) % 26) + 97);
+                }
+                // Return unchanged for non-alphabetic characters
+                return char;
+            }).join('');
+        }
+
+        // Caesar cipher decryption function
+        function caesarDecrypt(text, shift) {
+            return caesarEncrypt(text, 26 - (shift % 26));
+        }
+
+        // Function to encrypt booking data - SIMPLIFIED TO USE ONLY CAESAR CIPHER
+        function encryptBookingData(bookingData, shift) {
+            const jsonStr = JSON.stringify(bookingData);
+            return caesarEncrypt(jsonStr, shift);
+        }
+
+        // Function to decrypt booking data - SIMPLIFIED TO USE ONLY CAESAR CIPHER
+        function decryptBookingData(encryptedData, shift) {
+            const decrypted = caesarDecrypt(encryptedData, shift);
+            return JSON.parse(decrypted);
+        }
+
+        // Generate QR code with improved readability and LARGER SIZE
+        function generateQRCode(data, element) {
+            element.innerHTML = '';
+            
+            try {
+                // Create a container for the QR code with a white background
+                const qrContainer = document.createElement('div');
+                qrContainer.className = 'bg-white p-4 rounded-lg inline-block';
+                element.appendChild(qrContainer);
+                
+                // Generate QR code with ENHANCED settings for better scanning
+                QRCode.toDataURL(data, {
+                    width: 350, // INCREASED size for much better scanning
+                    margin: 6,  // Added more margin around the code
+                    errorCorrectionLevel: 'H', // Highest error correction level
+                    color: {
+                        dark: '#000000', // Always black, regardless of theme
+                        light: '#FFFFFF'  // Always white background
+                    }
+                }, function(error, url) {
+                    if (error) {
+                        console.error("Error generating QR code data URL:", error);
+                        element.innerHTML = '<p class="text-red-500">Error generating QR code</p>';
+                        return;
+                    }
+                    
+                    // Create the image element
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = "Booking QR Code";
+                    img.style.maxWidth = "100%";
+                    img.className = "mx-auto";
+                    
+                    // Add the image to the white container
+                    qrContainer.appendChild(img);
+                });
+            } catch (e) {
+                console.error("Error in QR code generation:", e);
+                element.innerHTML = '<p class="text-red-500">Failed to generate QR code</p>';
+            }
+        }
+
+        // Storage functions using document data attribute
+        const bookingsStorageKey = 'savedBookings';
+
+        function saveBookings(bookings) {
+            document.body.dataset.bookings = JSON.stringify(bookings);
+            renderSavedBookings();
+        }
+
+        function getBookings() {
+            try {
+                return document.body.dataset.bookings ? JSON.parse(document.body.dataset.bookings) : [];
+            } catch (e) {
+                console.error('Error getting bookings:', e);
+                return [];
+            }
+        }
+
+        // Initialize bookings storage
+        if (!document.body.dataset.bookings) {
+            document.body.dataset.bookings = JSON.stringify([]);
+        }
+
+        // Add dish row functionality
+        document.getElementById('addDishButton').addEventListener('click', function() {
+            const dishesContainer = document.getElementById('dishesContainer');
+            const existingRows = dishesContainer.querySelectorAll('.dish-row');
+            
+            // Clone the first dish row
+            const newRow = existingRows[0].cloneNode(true);
+            
+            // Clear selected values in the new row
+            newRow.querySelector('select[name="selectedDish"]').value = '';
+            newRow.querySelector('input[name="dishQuantity"]').value = '1';
+            
+            // Show remove button for all rows
+            existingRows.forEach(row => {
+                row.querySelector('.remove-dish-btn').style.display = 'block';
+            });
+            
+            // Show remove button for the new row and add event listener
+            const removeBtn = newRow.querySelector('.remove-dish-btn');
+            removeBtn.style.display = 'block';
+            removeBtn.addEventListener('click', function() {
+                newRow.remove();
+                
+                // If only one row left, hide its remove button
+                const remainingRows = dishesContainer.querySelectorAll('.dish-row');
+                if (remainingRows.length === 1) {
+                    remainingRows[0].querySelector('.remove-dish-btn').style.display = 'none';
+                }
+            });
+            
+            // Add the new row to the container
+            dishesContainer.appendChild(newRow);
+        });
+        
+        // Add event listener to the initial remove button
+        document.querySelector('.remove-dish-btn').addEventListener('click', function() {
+            const dishesContainer = document.getElementById('dishesContainer');
+            const rows = dishesContainer.querySelectorAll('.dish-row');
+            
+            // Don't remove if it's the last row
+            if (rows.length > 1) {
+                this.closest('.dish-row').remove();
+                
+                // If only one row left after removal, hide its remove button
+                if (rows.length === 2) {
+                    dishesContainer.querySelector('.remove-dish-btn').style.display = 'none';
+                }
+            }
+        });
+        
+        // Handle form submission
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form values
+            const customerName = document.getElementById('customerName').value;
+            const contactMedium = document.getElementById('contactMedium').value;
+            const username = document.getElementById('username').value;
+            const timeslot = document.getElementById('timeslot').value;
+            const seatNumber = document.getElementById('seatNumber').value;
+            const shiftKey = parseInt(document.getElementById('shiftKey').value, 10);
+            
+            // Get all dish selections and quantities
+            const dishRows = document.querySelectorAll('.dish-row');
+            const dishes = [];
+            
+            dishRows.forEach(row => {
+                const dish = row.querySelector('select[name="selectedDish"]').value;
+                const quantity = row.querySelector('input[name="dishQuantity"]').value;
+                
+                if (dish) {
+                    dishes.push({
+                        name: dish,
+                        quantity: quantity
+                    });
+                }
+            });
+            
+            // Validate at least one dish is selected
+            if (dishes.length === 0) {
+                alert('Please select at least one dish');
+                return;
+            }
+            
+            // Create booking object
+            const booking = {
+                id: Date.now().toString(),
+                customerName,
+                contactMedium,
+                username,
+                timeslot,
+                dishes,
+                seatNumber,
+                shiftKey,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Encrypt and generate QR code
+            const encryptedData = encryptBookingData(booking, shiftKey);
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+            qrCodeContainer.innerHTML = '';
+            
+            // Generate and show the QR code
+            generateQRCode(encryptedData, qrCodeContainer);
+            
+            // Show booking details
+            const bookingDetails = document.getElementById('bookingDetails');
+            const bookingInfo = document.getElementById('bookingInfo');
+            bookingDetails.classList.remove('hidden');
+            
+            // Generate dish HTML
+            let dishesHtml = '';
+            dishes.forEach(dish => {
+                dishesHtml += `<p class="ml-4">• ${dish.name} (${dish.quantity})</p>`;
+            });
+            
+            bookingInfo.innerHTML = `
+                <p><strong>Customer Name:</strong> ${customerName}</p>
+                <p><strong>Contact Medium:</strong> ${contactMedium}</p>
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Timeslot:</strong> ${timeslot}</p>
+                <p><strong>Selected Dishes:</strong></p>
+                ${dishesHtml}
+                <p><strong>Seat Number:</strong> ${seatNumber}</p>
+                <p><strong>Encryption Key:</strong> ${shiftKey}</p>
+            `;
+            
+            // Show download button
+            const downloadBtn = document.getElementById('downloadQR');
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.addEventListener('click', function() {
+                // Allow user to save the QR code using browser's right-click
+                alert('Right-click on the QR code and select "Save image as..." to download');
+            });
+            
+            // Save to storage
+            const bookings = getBookings();
+            bookings.push(booking);
+            saveBookings(bookings);
+            
+            // Keep form data (do not reset)
+            // document.getElementById('bookingForm').reset();
+        });
+
+        // Render saved bookings
+        function renderSavedBookings() {
+            const savedBookingsContainer = document.getElementById('savedBookings');
+            const noBookingsElement = document.getElementById('noBookings');
+            const bookings = getBookings();
+            
+            // Clear existing bookings
+            savedBookingsContainer.innerHTML = '';
+            
+            if (bookings.length === 0) {
+                savedBookingsContainer.appendChild(noBookingsElement);
+                return;
+            }
+            
+            // Sort bookings by date (newest first)
+            bookings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            // Create booking cards
+            bookings.forEach(booking => {
+                const bookingCard = document.createElement('div');
+                bookingCard.className = 'bg-white dark:bg-gray-700 p-4 rounded-lg shadow';
+                
+                // Generate dish info for the card
+                let dishesInfo = '';
+                if (booking.dishes && Array.isArray(booking.dishes)) {
+                    // Handle array of dish objects (new format)
+                    dishesInfo = booking.dishes.map(dish => 
+                        `<p class="text-sm text-gray-600 dark:text-gray-400">${dish.name} (${dish.quantity})</p>`
+                    ).join('');
+                } else if (booking.selectedDish) {
+                    // Handle legacy format for backward compatibility
+                    dishesInfo = `<p class="text-sm text-gray-600 dark:text-gray-400">${booking.selectedDish} (${booking.dishQuantity})</p>`;
+                }
+                
+                bookingCard.innerHTML = `
+                    <div class="flex justify-between">
+                        <h3 class="font-bold">${booking.customerName}</h3>
+                        <button class="text-red-500 hover:text-red-700 delete-booking" data-id="${booking.id}">
+                            ✕
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${booking.timeslot}</p>
+                    ${dishesInfo}
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Seat: ${booking.seatNumber}</p>
+                    <button class="view-qr mt-2 text-primary hover:text-primary/80 text-sm" data-id="${booking.id}">
+                        View QR Code
+                    </button>
+                `;
+                
+                savedBookingsContainer.appendChild(bookingCard);
+            });
+            
+            // Add event listeners to delete buttons
+            document.querySelectorAll('.delete-booking').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookingId = this.getAttribute('data-id');
+                    deleteBooking(bookingId);
+                });
+            });
+            
+            // Add event listeners to view QR code buttons
+            document.querySelectorAll('.view-qr').forEach(button => {
+                button.addEventListener('click', function() {
+                    const bookingId = this.getAttribute('data-id');
+                    const booking = bookings.find(b => b.id === bookingId);
+                    
+                    if (booking) {
+                        // Display QR code and booking details
+                        const encryptedData = encryptBookingData(booking, booking.shiftKey);
+                        const qrCodeContainer = document.getElementById('qrCodeContainer');
+                        generateQRCode(encryptedData, qrCodeContainer);
+                        
+                        // Show booking details
+                        const bookingDetails = document.getElementById('bookingDetails');
+                        const bookingInfo = document.getElementById('bookingInfo');
+                        bookingDetails.classList.remove('hidden');
+                        
+                        // Handle both new and legacy dish format
+                        let dishesHtml = '';
+                        if (booking.dishes && Array.isArray(booking.dishes)) {
+                            // New format with multiple dishes
+                            dishesHtml = '<p><strong>Selected Dishes:</strong></p>';
+                            booking.dishes.forEach(dish => {
+                                dishesHtml += `<p class="ml-4">• ${dish.name} (${dish.quantity})</p>`;
+                            });
+                        } else if (booking.selectedDish) {
+                            // Legacy format
+                            dishesHtml = `<p><strong>Selected Dish:</strong> ${booking.selectedDish} (${booking.dishQuantity})</p>`;
+                        }
+                        
+                        bookingInfo.innerHTML = `
+                            <p><strong>Customer Name:</strong> ${booking.customerName}</p>
+                            <p><strong>Contact Medium:</strong> ${booking.contactMedium}</p>
+                            <p><strong>Username:</strong> ${booking.username}</p>
+                            <p><strong>Timeslot:</strong> ${booking.timeslot}</p>
+                            ${dishesHtml}
+                            <p><strong>Seat Number:</strong> ${booking.seatNumber}</p>
+                            <p><strong>Encryption Key:</strong> ${booking.shiftKey}</p>
+                        `;
+                        
+                        // Show download button
+                        const downloadBtn = document.getElementById('downloadQR');
+                        downloadBtn.classList.remove('hidden');
+                    }
+                });
+            });
+        }
+
+        // Delete booking
+        function deleteBooking(bookingId) {
+            if (confirm('Are you sure you want to delete this booking?')) {
+                const bookings = getBookings();
+                const updatedBookings = bookings.filter(booking => booking.id !== bookingId);
+                saveBookings(updatedBookings);
+            }
+        }
+
+        // CSV Export function
+        document.getElementById('exportCSV').addEventListener('click', function() {
+            const bookings = getBookings();
+            
+            if (bookings.length === 0) {
+                alert('No bookings to export');
+                return;
+            }
+            
+            // Define CSV headers
+            const headers = ['ID', 'Customer Name', 'Contact Medium', 'Username', 'Timeslot', 'Dishes', 'Seat Number', 'Created At'];
+            
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            
+            bookings.forEach(booking => {
+                // Format dishes data for CSV
+                let dishesStr = '';
+                
+                if (booking.dishes && Array.isArray(booking.dishes)) {
+                    // New format with dish array
+                    dishesStr = booking.dishes.map(dish => `${dish.name}:${dish.quantity}`).join('|');
+                } else if (booking.selectedDish) {
+                    // Legacy format
+                    dishesStr = `${booking.selectedDish}:${booking.dishQuantity}`;
+                }
+                
+                // Process data to handle commas within fields by adding quotes
+                const row = [
+                    booking.id,
+                    `"${booking.customerName.replace(/"/g, '""')}"`,
+                    `"${booking.contactMedium.replace(/"/g, '""')}"`,
+                    `"${booking.username.replace(/"/g, '""')}"`,
+                    `"${booking.timeslot.replace(/"/g, '""')}"`,
+                    `"${dishesStr.replace(/"/g, '""')}"`,
+                    `"${booking.seatNumber.replace(/"/g, '""')}"`,
+                    booking.createdAt
+                ];
+                
+                csvContent += row.join(',') + '\n';
+            });
+            
+            // Create a blob with the CSV content
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            
+            // Create a link element
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `bookings_export_${new Date().toISOString().split('T')[0]}.csv`;
+            link.style.display = 'none';
+            
+            // Add to document, click it, and remove it
+            document.body.appendChild(link);
+            link.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }, 100);
+        });
+        
+        // CSV Import function
+        document.getElementById('importCSV').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const csvData = event.target.result;
+                    const lines = csvData.split('\n');
+                    const headers = lines[0].split(',');
+                    
+                    // Check if CSV has the expected format
+                    const requiredHeaders = ['Customer Name', 'Contact Medium', 'Username', 'Timeslot', 'Dishes', 'Seat Number'];
+                    const hasRequiredHeaders = requiredHeaders.every(header => 
+                        headers.some(h => h.trim() === header)
+                    );
+                    
+                    // Also support legacy format (backwards compatibility)
+                    const legacyHeaders = ['Customer Name', 'Contact Medium', 'Username', 'Timeslot', 'Selected Dish', 'Dish Quantity', 'Seat Number'];
+                    const hasLegacyHeaders = legacyHeaders.every(header => 
+                        headers.some(h => h.trim() === header)
+                    );
+                    
+                    if (!hasRequiredHeaders && !hasLegacyHeaders) {
+                        alert('CSV file does not have the required headers. Please make sure it contains: ' + requiredHeaders.join(', '));
+                        return;
+                    }
+                    
+                    // Find indices of headers
+                    const nameIndex = headers.findIndex(h => h.trim() === 'Customer Name');
+                    const contactMediumIndex = headers.findIndex(h => h.trim() === 'Contact Medium');
+                    const usernameIndex = headers.findIndex(h => h.trim() === 'Username');
+                    const timeslotIndex = headers.findIndex(h => h.trim() === 'Timeslot');
+                    const dishesIndex = headers.findIndex(h => h.trim() === 'Dishes');
+                    const selectedDishIndex = headers.findIndex(h => h.trim() === 'Selected Dish'); // Legacy
+                    const dishQuantityIndex = headers.findIndex(h => h.trim() === 'Dish Quantity'); // Legacy
+                    const seatNumberIndex = headers.findIndex(h => h.trim() === 'Seat Number');
+                    
+                    // Helper function to parse CSV row considering quoted values
+                    function parseCSVRow(row) {
+                        const result = [];
+                        let insideQuotes = false;
+                        let currentValue = '';
+                        
+                        for (let i = 0; i < row.length; i++) {
+                            const char = row[i];
+                            
+                            if (char === '"') {
+                                // If we see a quote and we're not inside quotes, start quote
+                                // If we see a quote and we're inside quotes, check if it's escaped
+                                if (insideQuotes && row[i + 1] === '"') {
+                                    // Escaped quote
+                                    currentValue += '"';
+                                    i++; // Skip the next quote
+                                } else {
+                                    // Toggle quote state
+                                    insideQuotes = !insideQuotes;
+                                }
+                            } else if (char === ',' && !insideQuotes) {
+                                // End of field
+                                result.push(currentValue);
+                                currentValue = '';
+                            } else {
+                                currentValue += char;
+                            }
+                        }
+                        
+                        // Add the last field
+                        result.push(currentValue);
+                        return result;
+                    }
+                    
+                    // Process each line except the header
+                    const bookings = getBookings();
+                    let importedCount = 0;
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue; // Skip empty lines
+                        
+                        const values = parseCSVRow(lines[i]);
+                        
+                        // Create booking object
+                        const booking = {
+                            id: Date.now().toString() + '_' + i, // Generate unique ID
+                            customerName: values[nameIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '',
+                            contactMedium: values[contactMediumIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '',
+                            username: values[usernameIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '',
+                            timeslot: values[timeslotIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '',
+                            seatNumber: values[seatNumberIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '',
+                            shiftKey: 3, // Fixed encryption key
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        // Handle dishes based on format
+                        if (dishesIndex >= 0 && values[dishesIndex]) {
+                            // New format with combined dishes string
+                            const dishesStr = values[dishesIndex].replace(/^"|"$/g, '').replace(/""/g, '"');
+                            const dishItems = dishesStr.split('|');
+                            
+                            booking.dishes = dishItems.map(item => {
+                                const [name, quantity] = item.split(':');
+                                return {
+                                    name: name || '',
+                                    quantity: quantity || '1'
+                                };
+                            }).filter(dish => dish.name);
+                        } else if (selectedDishIndex >= 0 && dishQuantityIndex >= 0) {
+                            // Legacy format with separate dish and quantity
+                            const selectedDish = values[selectedDishIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '';
+                            const dishQuantity = values[dishQuantityIndex]?.replace(/^"|"$/g, '').replace(/""/g, '"') || '1';
+                            
+                            if (selectedDish) {
+                                booking.dishes = [{
+                                    name: selectedDish,
+                                    quantity: dishQuantity
+                                }];
+                            } else {
+                                booking.dishes = [];
+                            }
+                        } else {
+                            booking.dishes = [];
+                        }
+                        
+                        // Skip entries with no dishes
+                        if (booking.dishes.length === 0) continue;
+                        
+                        bookings.push(booking);
+                        importedCount++;
+                    }
+                    
+                    // Save the updated bookings
+                    saveBookings(bookings);
+                    
+                    alert(`Successfully imported ${importedCount} bookings.`);
+                    
+                    // Reset the file input for future imports
+                    e.target.value = '';
+                } catch (error) {
+                    console.error('Error importing CSV:', error);
+                    alert('Error importing CSV file. Please check the file format.');
+                }
+            };
+            
+            reader.readAsText(file);
+        });
+
+        // Initial rendering of saved bookings
+        renderSavedBookings();
+    </script>
+</body>
+</html>
